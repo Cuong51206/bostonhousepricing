@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tìm Tên Trùng Nhau</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg: #0a0e17;
+    --surface: #111827;
+    --surface2: #1a2234;
+    --border: #1e2d45;
+    --accent: #00d4ff;
+    --accent2: #ff6b35;
+    --accent3: #7c3aed;
+    --text: #e2e8f0;
+    --text-muted: #64748b;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --grid-color: rgba(0,212,255,0.04);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Be Vietnam Pro', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--grid-color) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Glow blobs */
+  .blob {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: 0.12;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .blob-1 { width: 500px; height: 500px; background: var(--accent); top: -200px; left: -100px; }
+  .blob-2 { width: 400px; height: 400px; background: var(--accent3); bottom: -150px; right: -100px; }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 52px;
+    animation: fadeDown 0.6s ease both;
+  }
+
+  .logo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0,212,255,0.08);
+    border: 1px solid rgba(0,212,255,0.2);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 800;
+    line-height: 1.15;
+    background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .subtitle {
+    margin-top: 12px;
+    color: var(--text-muted);
+    font-size: 1rem;
+    font-weight: 400;
+  }
+
+  /* Drop zone */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 20px;
+    padding: 48px 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: rgba(17,24,39,0.6);
+    backdrop-filter: blur(10px);
+    margin-bottom: 28px;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--accent);
+    background: rgba(0,212,255,0.05);
+    transform: translateY(-2px);
+    box-shadow: 0 0 40px rgba(0,212,255,0.08);
+  }
+
+  .drop-icon {
+    width: 64px;
+    height: 64px;
+    background: linear-gradient(135deg, rgba(0,212,255,0.15), rgba(124,58,237,0.15));
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 28px;
+  }
+
+  .drop-zone h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .drop-zone p {
+    color: var(--text-muted);
+    font-size: 0.875rem;
+  }
+
+  .drop-zone input[type="file"] {
+    display: none;
+  }
+
+  .btn-browse {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 10px 24px;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    border: none;
+    border-radius: 100px;
+    color: #fff;
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-browse:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 24px rgba(0,212,255,0.3);
+  }
+
+  /* File list */
+  .file-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 28px;
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+
+  .file-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    transition: all 0.2s ease;
+  }
+
+  .file-item:hover {
+    border-color: rgba(0,212,255,0.2);
+  }
+
+  .file-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #1d7a4a, #2ea865);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .file-info { flex: 1; min-width: 0; }
+
+  .file-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .file-meta {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .file-status {
+    font-size: 0.75rem;
+    padding: 4px 10px;
+    border-radius: 100px;
+    font-weight: 600;
+  }
+
+  .file-status.loading { background: rgba(245,158,11,0.15); color: var(--warning); }
+  .file-status.ok { background: rgba(16,185,129,0.15); color: var(--success); }
+  .file-status.error { background: rgba(239,68,68,0.15); color: var(--danger); }
+
+  .btn-remove {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-remove:hover { color: var(--danger); background: rgba(239,68,68,0.1); }
+
+  /* Control bar */
+  .control-bar {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+    animation: fadeUp 0.6s 0.4s ease both;
+  }
+
+  .search-wrap {
+    flex: 1;
+    min-width: 200px;
+    position: relative;
+  }
+
+  .search-wrap svg {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 12px 16px 12px 42px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    outline: none;
+  }
+
+  .search-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,212,255,0.1);
+  }
+
+  .btn-analyze {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    background: linear-gradient(135deg, var(--accent), #0099cc);
+    border: none;
+    border-radius: 12px;
+    color: #000;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    white-space: nowrap;
+  }
+
+  .btn-analyze:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0,212,255,0.35);
+  }
+
+  .btn-analyze:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .btn-clear {
+    padding: 12px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text-muted);
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-clear:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* Stats bar */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px 20px;
+    position: relative;
+    overflow: hidden;
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.05;
+    border-radius: inherit;
+  }
+
+  .stat-card.blue::before { background: var(--accent); }
+  .stat-card.orange::before { background: var(--accent2); }
+  .stat-card.purple::before { background: var(--accent3); }
+  .stat-card.green::before { background: var(--success); }
+
+  .stat-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .stat-card.blue .stat-value { color: var(--accent); }
+  .stat-card.orange .stat-value { color: var(--accent2); }
+  .stat-card.purple .stat-value { color: var(--accent3); }
+  .stat-card.green .stat-value { color: var(--success); }
+
+  /* Results */
+  .results-section {
+    animation: fadeUp 0.5s ease both;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .badge {
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .badge-red { background: rgba(239,68,68,0.15); color: var(--danger); }
+  .badge-blue { background: rgba(0,212,255,0.12); color: var(--accent); }
+
+  .btn-export {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: rgba(16,185,129,0.1);
+    border: 1px solid rgba(16,185,129,0.3);
+    border-radius: 8px;
+    color: var(--success);
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-export:hover { background: rgba(16,185,129,0.2); }
+
+  /* Table */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  thead tr {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  th {
+    padding: 13px 16px;
+    text-align: left;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  tbody tr {
+    border-bottom: 1px solid rgba(30,45,69,0.5);
+    transition: background 0.15s;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(0,212,255,0.025); }
+
+  td {
+    padding: 13px 16px;
+    font-size: 0.875rem;
+  }
+
+  .td-name {
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .td-count {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--accent2);
+  }
+
+  .file-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .file-tag {
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    background: rgba(124,58,237,0.15);
+    color: #a78bfa;
+    border: 1px solid rgba(124,58,237,0.2);
+    white-space: nowrap;
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .row-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .row-tag {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    background: rgba(0,212,255,0.08);
+    color: var(--accent);
+    border: 1px solid rgba(0,212,255,0.15);
+  }
+
+  .mssv-badge {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-family: 'Space Mono', monospace;
+    background: rgba(255,107,53,0.12);
+    color: var(--accent2);
+    border: 1px solid rgba(255,107,53,0.25);
+    letter-spacing: 0.04em;
+  }
+
+  .mssv-missing {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  /* Empty/loading state */
+  .empty-state {
+    text-align: center;
+    padding: 64px 32px;
+    color: var(--text-muted);
+  }
+
+  .empty-state .big-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.4; }
+  .empty-state p { font-size: 0.9rem; }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(0,212,255,0.1);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+
+  /* Tooltip for rows */
+  .rows-cell {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* Animations */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 100px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .control-bar { flex-direction: column; }
+    .btn-analyze, .btn-clear { width: 100%; justify-content: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+
+<div class="container">
+  <header>
+    <div class="logo-badge">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      Công cụ phân tích Excel
+    </div>
+    <h1>Tìm Tên Trùng Nhau</h1>
+    <p class="subtitle">Import nhiều file Excel và phát hiện tên trùng lặp trong cột <strong>Họ và tên</strong> kèm <strong>MSSV</strong></p>
+  </header>
+
+  <div class="drop-zone" id="dropZone">
+    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" multiple>
+    <div class="drop-icon">📊</div>
+    <h3>Kéo thả file Excel vào đây</h3>
+    <p>Hỗ trợ định dạng .xlsx, .xls, .csv — nhiều file cùng lúc</p>
+    <button class="btn-browse" onclick="document.getElementById('fileInput').click()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+      Chọn file từ máy tính
+    </button>
+  </div>
+
+  <div class="file-list" id="fileList"></div>
+
+  <div class="control-bar" id="controlBar" style="display:none">
+    <div class="search-wrap">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" class="search-input" id="searchInput" placeholder="Tìm kiếm tên...">
+    </div>
+    <button class="btn-analyze" id="btnAnalyze">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+      Phân tích ngay
+    </button>
+    <button class="btn-clear" id="btnClear">Xóa tất cả</button>
+  </div>
+
+  <div class="stats-bar" id="statsBar" style="display:none">
+    <div class="stat-card blue">
+      <div class="stat-label">Tổng file</div>
+      <div class="stat-value" id="statFiles">0</div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-label">Tổng bản ghi</div>
+      <div class="stat-value" id="statRecords">0</div>
+    </div>
+    <div class="stat-card orange">
+      <div class="stat-label">Tên trùng</div>
+      <div class="stat-value" id="statDupes">0</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-label">Tên duy nhất</div>
+      <div class="stat-value" id="statUnique">0</div>
+    </div>
+  </div>
+
+  <div class="results-section" id="resultsSection" style="display:none">
+    <div class="section-header">
+      <div class="section-title">
+        🔴 Tên xuất hiện trong nhiều file
+        <span class="badge badge-red" id="dupeCount">0</span>
+      </div>
+      <button class="btn-export" id="btnExport">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Xuất Excel
+      </button>
+    </div>
+
+    <div class="table-wrap" id="dupeTableWrap">
+      <div class="empty-state" id="noResults">
+        <div class="big-icon">🎉</div>
+        <p>Không tìm thấy tên trùng lặp giữa các file!</p>
+      </div>
+      <table id="dupeTable" style="display:none">
+        <thead>
+          <tr>
+            <th style="width:40px">#</th>
+            <th>Họ và tên</th>
+            <th>MSSV</th>
+            <th>Số lần xuất hiện</th>
+            <th>Có trong file</th>
+            <th>Hàng (trong file)</th>
+          </tr>
+        </thead>
+        <tbody id="dupeBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const state = {
+  files: [],    // { name, size, data: [{name, mssv, row, sheet}], status }
+  results: null
+};
+
+// ─── Drag & Drop ─────────────────────────────────────────────
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  handleFiles([...e.dataTransfer.files]);
+});
+document.getElementById('fileInput').addEventListener('change', e => {
+  handleFiles([...e.target.files]);
+  e.target.value = '';
+});
+
+// ─── File Handling ────────────────────────────────────────────
+function handleFiles(newFiles) {
+  newFiles.forEach(file => {
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!['xlsx','xls','csv'].includes(ext)) return;
+    if (state.files.find(f => f.name === file.name)) return; // skip duplicates
+    const entry = { name: file.name, size: file.size, data: [], status: 'loading' };
+    state.files.push(entry);
+    renderFileList();
+    readFile(file, entry);
+  });
+  updateControlBar();
+}
+
+function readFile(file, entry) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'binary' });
+      entry.data = [];
+
+      wb.SheetNames.forEach(sheetName => {
+        const ws = wb.Sheets[sheetName];
+        const json = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+        if (json.length < 1) return;
+
+        // Find "Họ và tên" column (case-insensitive, trim)
+        const header = json[0];
+        let colIdx = -1;
+        for (let i = 0; i < header.length; i++) {
+          const h = String(header[i]).trim().toLowerCase();
+          if (h === 'họ và tên' || h === 'ho va ten' || h === 'họ tên' || h === 'ho ten'
+              || h === 'tên' || h === 'ten' || h === 'full name' || h === 'name'
+              || h.includes('họ') && h.includes('tên')) {
+            colIdx = i;
+            break;
+          }
+        }
+
+        if (colIdx === -1) {
+          // Try to find any column with "tên" in its name
+          for (let i = 0; i < header.length; i++) {
+            const h = String(header[i]).trim().toLowerCase();
+            if (h.includes('tên') || h.includes('ten') || h.includes('name')) {
+              colIdx = i;
+              break;
+            }
+          }
+        }
+
+        if (colIdx === -1) {
+          // Fallback: use column 0 if only 1 sheet, otherwise warn
+          colIdx = 0;
+        }
+
+        // Find MSSV column
+        let mssvIdx = -1;
+        for (let i = 0; i < header.length; i++) {
+          const h = String(header[i]).trim().toLowerCase();
+          if (h === 'mssv' || h === 'mã số sinh viên' || h === 'ma so sinh vien'
+              || h === 'mã sv' || h === 'ma sv' || h === 'student id'
+              || h === 'studentid' || h === 'mã học sinh' || h === 'mã hs'
+              || h.includes('mssv') || h.includes('mã số')) {
+            mssvIdx = i;
+            break;
+          }
+        }
+
+        for (let r = 1; r < json.length; r++) {
+          const val = String(json[r][colIdx] || '').trim();
+          const mssv = mssvIdx >= 0 ? String(json[r][mssvIdx] || '').trim() : '';
+          if (val) {
+            entry.data.push({ name: val, mssv, row: r + 1, sheet: wb.SheetNames.length > 1 ? sheetName : null });
+          }
+        }
+      });
+
+      entry.status = 'ok';
+    } catch(err) {
+      entry.status = 'error';
+    }
+    renderFileList();
+  };
+  reader.onerror = () => { entry.status = 'error'; renderFileList(); };
+  reader.readAsBinaryString(file);
+}
+
+// ─── Render File List ─────────────────────────────────────────
+function renderFileList() {
+  const el = document.getElementById('fileList');
+  if (state.files.length === 0) { el.innerHTML = ''; return; }
+
+  el.innerHTML = state.files.map((f, i) => `
+    <div class="file-item">
+      <div class="file-icon">📗</div>
+      <div class="file-info">
+        <div class="file-name">${escHtml(f.name)}</div>
+        <div class="file-meta">${formatSize(f.size)} · ${f.status === 'ok' ? f.data.length + ' bản ghi' : '...'}</div>
+      </div>
+      <span class="file-status ${f.status}">${
+        f.status === 'loading' ? 'Đang đọc...' :
+        f.status === 'ok' ? '✓ Sẵn sàng' : '✗ Lỗi'
+      }</span>
+      <button class="btn-remove" onclick="removeFile(${i})" title="Xóa file">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+  `).join('');
+}
+
+function removeFile(i) {
+  state.files.splice(i, 1);
+  renderFileList();
+  updateControlBar();
+  if (state.files.length === 0) clearResults();
+}
+
+// ─── Analyze ─────────────────────────────────────────────────
+document.getElementById('btnAnalyze').addEventListener('click', analyze);
+document.getElementById('btnClear').addEventListener('click', () => {
+  state.files = [];
+  renderFileList();
+  updateControlBar();
+  clearResults();
+});
+document.getElementById('searchInput').addEventListener('input', renderResults);
+
+function analyze() {
+  const ready = state.files.filter(f => f.status === 'ok');
+  if (ready.length < 2) {
+    alert('Cần ít nhất 2 file đã đọc thành công để so sánh!');
+    return;
+  }
+
+  // Build map: name -> [{fileName, mssv, row, sheet}]
+  const map = new Map();
+  ready.forEach(f => {
+    f.data.forEach(d => {
+      const key = d.name.toLowerCase();
+      if (!map.has(key)) map.set(key, { displayName: d.name, entries: [] });
+      map.get(key).entries.push({ file: f.name, mssv: d.mssv, row: d.row, sheet: d.sheet });
+    });
+  });
+
+  // Duplicates = name appears in >1 distinct file
+  const dupes = [];
+  let totalUnique = 0;
+  let totalRecords = 0;
+  ready.forEach(f => totalRecords += f.data.length);
+
+  map.forEach((val, key) => {
+    const files = [...new Set(val.entries.map(e => e.file))];
+    if (files.length > 1) {
+      dupes.push({ name: val.displayName, files, entries: val.entries });
+    } else {
+      totalUnique++;
+    }
+  });
+
+  dupes.sort((a, b) => b.files.length - a.files.length || a.name.localeCompare(b.name, 'vi'));
+
+  state.results = { dupes, totalRecords, totalUnique: map.size - dupes.length, totalNames: map.size };
+
+  showStats(ready.length, totalRecords, dupes.length, map.size - dupes.length);
+  renderResults();
+}
+
+function showStats(files, records, dupes, unique) {
+  document.getElementById('statsBar').style.display = 'grid';
+  document.getElementById('statFiles').textContent = files;
+  document.getElementById('statRecords').textContent = records.toLocaleString('vi');
+  document.getElementById('statDupes').textContent = dupes.toLocaleString('vi');
+  document.getElementById('statUnique').textContent = unique.toLocaleString('vi');
+}
+
+function renderResults() {
+  if (!state.results) return;
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  let { dupes } = state.results;
+  if (q) dupes = dupes.filter(d => d.name.toLowerCase().includes(q));
+
+  document.getElementById('resultsSection').style.display = 'block';
+  document.getElementById('dupeCount').textContent = dupes.length;
+
+  if (dupes.length === 0) {
+    document.getElementById('noResults').style.display = 'block';
+    document.getElementById('dupeTable').style.display = 'none';
+    return;
+  }
+
+  document.getElementById('noResults').style.display = 'none';
+  document.getElementById('dupeTable').style.display = 'table';
+
+  const tbody = document.getElementById('dupeBody');
+  tbody.innerHTML = dupes.map((d, i) => {
+    const fileTags = d.files.map(f => `<span class="file-tag" title="${escHtml(f)}">${escHtml(f)}</span>`).join('');
+
+    // Group rows by file
+    const byFile = {};
+    d.entries.forEach(e => {
+      if (!byFile[e.file]) byFile[e.file] = [];
+      byFile[e.file].push(e.sheet ? `${e.sheet}:${e.row}` : `Hàng ${e.row}`);
+    });
+    const rowTags = Object.entries(byFile).map(([fn, rows]) =>
+      `<span class="row-tag" title="${escHtml(fn)}">${rows.slice(0,3).join(', ')}${rows.length>3?'…':''}</span>`
+    ).join('');
+
+    // --- CẬP NHẬT: XỬ LÝ VÀ HIỂN THỊ MSSV ---
+    // Lấy danh sách các MSSV duy nhất của học sinh bị trùng tên (bỏ qua các ô rỗng)
+    const mssvs = [...new Set(d.entries.map(e => e.mssv).filter(m => m))].join(', ');
+    const mssvHtml = mssvs ? `<span class="mssv-badge">${escHtml(mssvs)}</span>` : `<span class="mssv-missing">Trống</span>`;
+
+    return `
+      <tr>
+        <td style="color:var(--text-muted);font-family:'Space Mono',monospace;font-size:0.75rem">${i+1}</td>
+        <td class="td-name">${escHtml(d.name)}</td>
+        <td>${mssvHtml}</td> <td class="td-count">${d.files.length} file</td>
+        <td><div class="file-tags">${fileTags}</div></td>
+        <td><div class="row-tags">${rowTags}</div></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ─── Export ───────────────────────────────────────────────────
+document.getElementById('btnExport').addEventListener('click', () => {
+  if (!state.results) return;
+  const { dupes } = state.results;
+
+  // --- CẬP NHẬT: Thêm cột MSSV vào mảng tiêu đề xuất file Excel ---
+  const rows = [['STT', 'Họ và tên', 'MSSV', 'Số file trùng', 'Các file chứa tên', 'Chi tiết hàng']];
+  
+  dupes.forEach((d, i) => {
+    // Trích xuất MSSV để xuất Excel
+    const mssvs = [...new Set(d.entries.map(e => e.mssv).filter(m => m))].join(', ');
+
+    const byFile = {};
+    d.entries.forEach(e => {
+      if (!byFile[e.file]) byFile[e.file] = [];
+      byFile[e.file].push(e.sheet ? `${e.sheet}:${e.row}` : `Hàng ${e.row}`);
+    });
+    const rowDetail = Object.entries(byFile).map(([fn, rs]) => `${fn}: ${rs.join(', ')}`).join(' | ');
+    
+    // Thêm mssvs vào mảng dữ liệu row
+    rows.push([i+1, d.name, mssvs, d.files.length, d.files.join(', '), rowDetail]);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  // --- CẬP NHẬT: Thêm width cho cột MSSV ({wch: 15}) ---
+  ws['!cols'] = [{wch:6},{wch:30},{wch:15},{wch:14},{wch:60},{wch:80}]; 
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Ten Trung');
+  XLSX.writeFile(wb, 'ten-trung-nhau.xlsx');
+});
+
+// ─── Helpers ─────────────────────────────────────────────────
+function updateControlBar() {
+  document.getElementById('controlBar').style.display = state.files.length > 0 ? 'flex' : 'none';
+}
+
+function clearResults() {
+  document.getElementById('statsBar').style.display = 'none';
+  document.getElementById('resultsSection').style.display = 'none';
+  state.results = null;
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/1024/1024).toFixed(1) + ' MB';
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
