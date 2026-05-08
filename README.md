@@ -10,14 +10,6 @@ The **Boston House Pricing Prediction** project is an End-to-End Machine Learnin
 
 **Live Demo:** [https://bostonhousepricing-7zkp.onrender.com]
 
-## Tech Stack
-* **Language:** Python
-* **Machine Learning:** scikit-learn, numpy, pandas
-* **Web Framework:** Flask
-* **Frontend:** HTML5, CSS3
-* **Containerization:** Docker
-* **Deployment:** Render Cloud
-
 ## Software And Tools Requirements
 To run and develop this project, you will need the following tools:
 1. [Github Account](https://github.com)
