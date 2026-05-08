@@ -1,3 +1,44 @@
-<p>
-    Hello World! This is the home page of the Boston House Pricing Prediction API. You can use this API to predict house prices based on various features. To get started, send a POST request to the /predict endpoint with the required data in JSON format. The API will return the predicted house price based on the input features.
-</p>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Boston House Price Prediction</title>
+    <style>
+        /* Thêm một chút CSS cơ bản để giao diện dễ nhìn giống tác giả */
+        body { background-color: #f2f2f2; font-family: Arial, sans-serif; text-align: center; }
+        .login { width: 400px; margin: 50px auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); }
+        input { width: 90%; padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 5px; }
+        button { width: 95%; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background-color: #0056b3; }
+        h2 { color: #28a745; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="login">
+        <h1>Boston House Price Prediction</h1>
+
+        <form action="{{ url_for('predict') }}" method="post">
+            <input type="text" name="CRIM" placeholder="CRIM (Tỷ lệ tội phạm)" required="required" /><br>
+            <input type="text" name="ZN" placeholder="ZN (Tỷ lệ đất ở)" required="required" /><br>
+            <input type="text" name="INDUS" placeholder="INDUS (Tỷ lệ kinh doanh)" required="required" /><br>
+            <input type="text" name="CHAS" placeholder="CHAS (Cận sông: 0 hoặc 1)" required="required" /><br>
+            <input type="text" name="NOX" placeholder="NOX (Nồng độ khí NOX)" required="required" /><br>
+            <input type="text" name="RM" placeholder="RM (Số phòng trung bình)" required="required" /><br>
+            <input type="text" name="Age" placeholder="Age (Tuổi đời nhà)" required="required" /><br>
+            <input type="text" name="DIS" placeholder="DIS (Khoảng cách trung tâm)" required="required" /><br>
+            <input type="text" name="RAD" placeholder="RAD (Chỉ số tiếp cận đường cao tốc)" required="required" /><br>
+            <input type="text" name="TAX" placeholder="TAX (Thuế tài sản)" required="required" /><br>
+            <input type="text" name="PTRATIO" placeholder="PTRATIO (Tỷ lệ học sinh/thầy giáo)" required="required" /><br>
+            <input type="text" name="B" placeholder="B (Tỷ lệ người gốc Phi)" required="required" /><br>
+            <input type="text" name="LSTAT" placeholder="LSTAT (Tỷ lệ dân trí thấp)" required="required" /><br>
+
+            <button type="submit" class="btn btn-primary btn-block btn-large">Predict</button>
+        </form>
+
+        <br>
+        
+        <h2> {{ prediction_text }} </h2>
+
+    </div>
+</body>
+</html>
