@@ -22,5 +22,5 @@ To run and develop this project, you will need the following tools:
 
 **Step 1: Clone the repository**
 ```bash
-git clone [https://github.com/YourUsername/bostonhousepricing.git](https://github.com/YourUsername/bostonhousepricing.git)
+git clone [https://github.com/Cuong51206/bostonhousepricing.git](https://github.com/Cuong51206/bostonhousepricing.git)
 cd bostonhousepricing
